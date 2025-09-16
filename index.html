@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shared Counters</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial; text-align:center; padding:50px; }
+    .counter { font-size:50px; font-weight:bold; color:#2c3e50; margin:10px 0; }
+    input, button { font-size:16px; padding:6px 10px; margin:3px; border-radius:5px; }
+    button { background:#2c3e50; color:white; cursor:pointer; border:none; }
+    button:hover { background:#34495e; }
+    .counter-block { margin-bottom:30px; }
+  </style>
+</head>
+<body>
+  <h1>Shared Monthly Counters</h1>
+
+  <div class="counter-block">
+    <div class="counter" id="Sara">0</div>
+    <input type="number" id="input_Sara" placeholder="Enter value">
+    <button onclick="updateCounter('Sara', true)">Add</button>
+    <button onclick="updateCounter('Sara', false)">Subtract</button>
+  </div>
+
+  <div class="counter-block">
+    <div class="counter" id="Poleg">0</div>
+    <input type="number" id="input_Poleg" placeholder="Enter value">
+    <button onclick="updateCounter('Poleg', true)">Add</button>
+    <button onclick="updateCounter('Poleg', false)">Subtract</button>
+  </div>
+
+  <div class="counter-block">
+    <div class="counter" id="Baby">0</div>
+    <input type="number" id="input_Baby" placeholder="Enter value">
+    <button onclick="updateCounter('Baby', true)">Add</button>
+    <button onclick="updateCounter('Baby', false)">Subtract</button>
+  </div>
+
+  <div class="counter-block">
+    <div class="counter" id="Trips">0</div>
+    <input type="number" id="input_Trips" placeholder="Enter value">
+    <button onclick="updateCounter('Trips', true)">Add</button>
+    <button onclick="updateCounter('Trips', false)">Subtract</button>
+  </div>
+
+  <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAwR42CwoxVRlki9Wp-I-bVfTdhMqkYVmc",
+  authDomain: "counters-cae2f.firebaseapp.com",
+  databaseURL: "https://counters-cae2f-default-rtdb.firebaseio.com",
+  projectId: "counters-cae2f",
+  storageBucket: "counters-cae2f.firebasestorage.app",
+  messagingSenderId: "647387119507",
+  appId: "1:647387119507:web:45f0ca4cd6dd27e83ab266",
+  measurementId: "G-1VT6EKBD85"
+};
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Counter info: start date & monthly increment
+    const countersData = {
+      Sara: { start: new Date("2025-09-01"), perMonth: 200 },
+      Poleg: { start: new Date("2025-09-01"), perMonth: 200 },
+      Baby: { start: new Date("2025-09-01"), perMonth: 1430 },
+      Trips: { start: new Date("2025-09-01"), perMonth: 400 }
+    };
+
+    function monthsBetween(start, end) {
+      return (end.getFullYear() - start.getFullYear()) * 12 +
+             (end.getMonth() - start.getMonth()) + 1; // include start month
+    }
+
+    // Initialize counters in DB if not exists
+    for (let name in countersData) {
+      const ref = db.ref(name);
+      ref.get().then(snapshot => {
+        if (!snapshot.exists()) {
+          const monthsPassed = monthsBetween(countersData[name].start, new Date());
+          ref.set({ value: monthsPassed * countersData[name].perMonth });
+        }
+      });
+    }
+
+    // Listen for changes & update display live
+    for (let name in countersData) {
+      db.ref(name).on('value', snapshot => {
+        const val = snapshot.val();
+        if (val) document.getElementById(name).textContent = val.value;
+      });
+    }
+
+    // Add/subtract manually
+    function updateCounter(name, add=true) {
+      const input = document.getElementById("input_" + name);
+      const amount = parseInt(input.value, 10);
+      if (!isNaN(amount)) {
+        const ref = db.ref(name);
+        ref.get().then(snapshot => {
+          const current = snapshot.val().value;
+          const newVal = add ? current + amount : current - amount;
+          ref.set({ value: newVal });
+          input.value = "";
+        });
+      } else {
+        alert("Enter a number!");
+      }
+    }
+  </script>
+</body>
+</html>
